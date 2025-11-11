@@ -2,6 +2,7 @@
 # Python version: 3.9
 # @TianZhen
 
+from __future__ import annotations
 import os
 import importlib.resources as pkg_resources
 from PIL import (Image, ImageDraw, ImageFont)
@@ -9,11 +10,11 @@ from typing import (Tuple, Optional, Any, Union)
 
 from . import fonts
 from .fonts import FontName
-from .utils import (render_image, create_binary_image, trim_image_border)
+from .utils import (render_image, to_bin_image, trim_image_border)
 from ..types import ImgFillingModeName
 
 
-def color_font(
+def fmt_font(
     text: str,
     font: Union[FontName, str] = FontName.LLDISCO,
     mode: ImgFillingModeName = "half-color",
@@ -24,7 +25,8 @@ def color_font(
     threshold: int = 5,
     font_size: int = 10,
     size: Optional[Tuple[int, int]] = None,
-    left_top: Tuple[int, int] = (0, 0)
+    left_top: Tuple[int, int] = (0, 0),
+    display: bool = False
 ):
     r"""
     Render colored text based on a specified font into a string representation.
@@ -66,6 +68,9 @@ def color_font(
 
         left_top : Tuple[int, int], default to `(0, 0)`
             Left top position to start drawing text on the image canvas.
+
+        display : bool, default to `False`
+            Whether to print the rendered string to the terminal using `smart_print`.
 
     Returns
     -------
@@ -109,10 +114,10 @@ def color_font(
     if trim_border:
         img = trim_image_border(img, value=0)
 
-    binary_img = create_binary_image(
+    binary_img = to_bin_image(
         img,
         threshold=threshold,
         upper_rgb=fore_rgb,
         lower_rgb=back_rgb
     )
-    return render_image(binary_img, mode=mode, charset=charset)
+    return render_image(binary_img, mode=mode, charset=charset, display=display)

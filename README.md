@@ -1,12 +1,13 @@
 <div align="center">
 
-<h2 id="title">term-tz</h2>
+<h2 id="title">cobra-color</h2>
 
-[![Build](https://github.com/tinchen777/term-tz/actions/workflows/tests.yml/badge.svg)](https://github.com/tinchen777/term-tz/actions/workflows/tests.yml)
-[![PyPI version](https://img.shields.io/pypi/v/term-tz.svg)](https://pypi.org/project/term-tz/)
-![Python Versions](https://img.shields.io/pypi/pyversions/term-tz.svg)
-![License](https://img.shields.io/github/license/tinchen777/term-tz.svg)
-[![Pull Requests Welcome](https://img.shields.io/badge/pull%20requests-welcome-brightgreen.svg)](https://github.com/tinchen777/term-tz/pulls)
+[![Build](https://github.com/tinchen777/cobra-color/actions/workflows/tests.yml/badge.svg)](https://github.com/tinchen777/cobra-color/actions/workflows/tests.yml)
+[![PyPI version](https://img.shields.io/pypi/v/cobra-color.svg)](https://pypi.org/project/cobra-color/)
+![Python Versions](https://img.shields.io/pypi/pyversions/cobra-color.svg)
+![License](https://img.shields.io/github/license/tinchen777/cobra-color.svg)
+[![Pull Requests Welcome](https://img.shields.io/badge/pull%20requests-welcome-brightgreen.svg)](https://github.com/tinchen777/cobra-color/pulls)
+![Github stars](https://img.shields.io/github/stars/tinchen777/cobra-color.svg)
 
 </div>
 
@@ -19,39 +20,47 @@ A lightweight Python library for enhanced terminal display: simple text color/st
 
 ## Features
 
-- :rocket Concise color/style names for terminal text.
-- :rocket Image rendering in multiple modes: ASCII, color, half-color, gray, half-gray.
-- :rocket Minimal dependencies and easy integration.
+- :rocket: Concise color/style names for terminal text.
+- :rocket: Image rendering in multiple modes: ASCII, color, half-color, gray, half-gray.
+- :rocket: Minimal dependencies and easy integration.
 
 ## Installation
 
 Stable (once published):
 
 ```bash
-pip install term-tz
+pip install cobra-color
 ```
 
 ## Quick Start
 
+- Render a text in the terminal:
+
+    ```python
+    from cobra_color import ctext
+
+    print(ctext("Hello World!", fg="r", styles=["bold"]))
+    ```
+
 - Render an image in the terminal:
 
     ```python
-    from term_tz import printable_image
+    from cobra_color.draw import fmt_image
 
     # ASCII art
-    print(printable_image("example.jpg", width=80, mode="ascii"))
+    print(fmt_image("example.jpg", width=80, mode="ascii"))
 
     # Half-block color (recommended for truecolor terminals)
-    print(printable_image("example.jpg", width=80, mode="half-color"))
+    print(fmt_image("example.jpg", width=80, mode="half-color"))
     ```
 
 - Render some text with fonts in the terminal:
 
     ```python
-    from term_tz import color_font, FontName
+    from cobra_color.draw import fmt_font, FontName
 
     # Borderless grayscale font
-    print(color_font("Hello World!", font=FontName.LLDISCO,, mode="half-gray", trim_border=True))
+    print(fmt_font("Hello World!", font=FontName.LLDISCO,, mode="half-gray", trim_border=True))
     ```
 
 ## Image Modes
@@ -76,5 +85,5 @@ See LICENSE in the repository.
 
 ## Links
 
-- Homepage/Repo: https://github.com/tinchen777/term-tz.git
-- Issues: https://github.com/tinchen777/term-tz.git/issues
+- Homepage/Repo: https://github.com/tinchen777/cobra-color.git
+- Issues: https://github.com/tinchen777/cobra-color.git/issues

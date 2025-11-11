@@ -9,12 +9,13 @@ from .utils import render_image
 from ..types import ImgFillingModeName
 
 
-def printable_image(
+def fmt_image(
     img_path: str,
     width: Optional[int] = None,
     height: Optional[int] = None,
     mode: ImgFillingModeName = "half-color",
-    charset: str = "@%#*+=-:. "
+    charset: str = "@%#*+=-:. ",
+    display: bool = False
 ) -> str:
     r"""
     Convert an image file to a string representation based on the specified mode.
@@ -38,6 +39,9 @@ def printable_image(
         charset : str, default to `"@%#*+=-:. "`
             Characters used for `"ascii"` representation, ordered from darkest to lightest.
 
+        display : bool, default to `False`
+            Whether to print the rendered string to the terminal using `smart_print`.
+
     Returns
     -------
         str
@@ -53,4 +57,4 @@ def printable_image(
             width = int(height / aspect_ratio)
         img = img.resize((width, height))
 
-    return render_image(img, mode=mode, charset=charset)
+    return render_image(img, mode=mode, charset=charset, display=display)

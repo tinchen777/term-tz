@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "term-tz"
-version = "0.1.1-beta"
+name = "cobra-color"
+version = "0.2.0"
 description = "A Python library for enhanced terminal display."
 readme = "README.md"
 license-files = ["LICENSE"]
@@ -18,10 +18,13 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/tinchen777/term-tz.git"
-Repository = "https://github.com/tinchen777/term-tz.git"
-Issues = "https://github.com/tinchen777/term-tz.git/issues"
+Homepage = "https://github.com/tinchen777/cobra-color.git"
+Repository = "https://github.com/tinchen777/cobra-color.git"
+Issues = "https://github.com/tinchen777/cobra-color.git/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["term_tz*"]
+include = ["cobra_color*"]
+
+[tool.setuptools.package-data]
+cobra_color.draw.fonts = ["*.ttf"]

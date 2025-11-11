@@ -2,11 +2,13 @@
 # Python version: 3.9
 # @TianZhen
 
+from __future__ import annotations
 from PIL import (Image, ImageChops)
 import numpy as np
 from typing import (Tuple, List, Union, Iterable)
 
 from ..color import ctext
+from ..output import smart_print
 from ..types import ImgFillingModeName
 
 
@@ -16,7 +18,8 @@ VALID_MODES = ("ascii", "color", "half-color", "gray", "half-gray")
 def render_image(
     img: Image.Image,
     mode: ImgFillingModeName = "half-color",
-    charset: str = "@%#*+=-:. "
+    charset: str = "@%#*+=-:. ",
+    display: bool = False
 ) -> str:
     r"""
     Render an image (`PIL.Image.Image`) into a string representation based on the specified mode.
@@ -37,10 +40,13 @@ def render_image(
         charset : str, default to `"@%#*+=-:. "`
             Characters used for `"ascii"` representation, ordered from darkest to lightest.
 
+        display : bool, default to `False`
+            Whether to print the rendered string to the terminal using `smart_print`.
+
     Returns
     -------
         str
-            String representation of the rendered image, use print() to display.
+            String representation of the rendered image.
     """
     if mode not in VALID_MODES:
         raise ValueError(f"Unknown mode(ImgFillingModeName): {mode!r}. Valid Modes: {VALID_MODES}")
@@ -106,10 +112,15 @@ def render_image(
                     )
             out_lines.append(line_str)
 
-    return "\n".join(out_lines)
+    output_str = "\n".join(out_lines)
+
+    if display:
+        smart_print(output_str)
+
+    return output_str
 
 
-def create_binary_image(
+def to_bin_image(
     src: Union[Iterable, Image.Image],
     threshold: int = 128,
     upper_rgb: Tuple[int, int, int] = (255, 255, 255),

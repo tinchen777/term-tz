@@ -2,6 +2,7 @@
 # Python version: 3.9
 # @TianZhen
 
+from __future__ import annotations
 from typing import (Any, Optional, Iterable, Union)
 
 from .types import (ColorName, StyleName)
@@ -36,11 +37,9 @@ def ctext(
     fg: Optional[Union[ColorName, int, Iterable[int]]] = None,
     bg: Optional[Union[ColorName, int, Iterable[int]]] = None,
     styles: Optional[Iterable[StyleName]] = None
-) -> "ColorStr":
+) -> ColorStr:
     r"""
     Generate a colored string for terminal output.
-
-    NOTE: The actual colored string is like `\033[43;1mtest\033[0m`.
 
     Parameters
     ----------
@@ -61,6 +60,8 @@ def ctext(
 
             NOTE: Each value should be in range `0-255`, representing `R`, `G`, `B` respectively.
 
+            - `None`: No color applied.
+
         bg : Optional[Union[ColorName, int, Iterable[int]]], default to `None`
             The background color of the string.
             (Same format and rules as `fg`.)
@@ -76,6 +77,93 @@ def ctext(
             The colored string with ANSI escape codes. Usage same as `str`, with extra property `plain` to get the plain text.
     """
     return ColorStr(text, fg=fg, bg=bg, styles=styles)
+
+
+def compile_template(
+    fg: Optional[Union[ColorName, int, Iterable[int]]] = None,
+    bg: Optional[Union[ColorName, int, Iterable[int]]] = None,
+    styles: Optional[Iterable[StyleName]] = None
+):
+    r"""
+    Create a template for generating colored strings with preset styles.
+
+    Parameters
+    ----------
+        fg : Optional[Union[ColorName, int, Iterable[int]]], default to `None`
+            The foreground color of the string.
+            (Same format and rules as in `ctext`.)
+
+        bg : Optional[Union[ColorName, int, Iterable[int]]], default to `None`
+            The background color of the string.
+            (Same format and rules as in `ctext`.)
+
+        styles : Optional[Iterable[StyleName]]], default to `None`
+            The styles combination of the string.
+            (Same format and rules as in `ctext`.)
+
+    Returns
+    -------
+        Template
+            A template object that can be used to generate colored strings with the preset styles.
+    """
+    return Template(fg=fg, bg=bg, styles=styles)
+
+
+class Template():
+    r"""
+    A template class for generating colored strings with preset styles.
+
+    Parameters
+    ----------
+        fg : Optional[Union[ColorName, int, Iterable[int]]], default to `None`
+            The foreground color of the string.
+            (Same format and rules as in `ctext`.)
+
+        bg : Optional[Union[ColorName, int, Iterable[int]]], default to `None`
+            The background color of the string.
+            (Same format and rules as in `ctext`.)
+
+        styles : Optional[Iterable[StyleName]]], default to `None`
+            The styles combination of the string.
+            (Same format and rules as in `ctext`.)
+    """
+    def __init__(
+        self,
+        fg: Any = None,
+        bg: Any = None,
+        styles: Any = None,
+        **kwargs: Any
+    ):
+        self.__fg = fg
+        self.__bg = bg
+        self.__styles = styles
+
+    def format(self, text: Any) -> ColorStr:
+        r"""
+        Generate a colored string using the preset template.
+
+        Parameters
+        ----------
+            text : Any
+                The text content to be colored.
+
+        Returns
+        -------
+            ColorStr
+                The colored string with ANSI escape codes. Usage same as `str`, with extra property `plain` to get the plain text.
+        """
+        return ctext(
+            text,
+            fg=self.__fg,
+            bg=self.__bg,
+            styles=self.__styles
+        )
+
+    def __call__(self, text: Any) -> ColorStr:
+        r"""
+        Generate a colored string using the preset template.
+        """
+        return self.format(text)
 
 
 class ColorStr(str):
