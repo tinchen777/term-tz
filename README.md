@@ -37,30 +37,34 @@ pip install cobra-color
 - Render a text in the terminal:
 
     ```python
-    from cobra_color import ctext
+    from cobra_color import ctext, smart_print
 
+    # Print directly from the terminal
     print(ctext("Hello World!", fg="r", styles=["bold"]))
+
+    # Alternatively, you can use smart_print() to automatically support progress bar modes like tqdm and rich.
+    smart_print(ctext("Hello World!", fg="r", styles=["bold"]))
     ```
 
 - Render an image in the terminal:
 
     ```python
-    from cobra_color.draw import fmt_image
+    from cobra_color.draw import fmt_image, smart_print
 
     # ASCII art
-    print(fmt_image("example.jpg", width=80, mode="ascii"))
+    smart_print(fmt_image("example.jpg", width=80, mode="ascii"))
 
     # Half-block color (recommended for truecolor terminals)
-    print(fmt_image("example.jpg", width=80, mode="half-color"))
+    smart_print(fmt_image("example.jpg", width=80, mode="half-color"))
     ```
 
 - Render some text with fonts in the terminal:
 
     ```python
-    from cobra_color.draw import fmt_font, FontName
+    from cobra_color.draw import fmt_font, FontName, smart_print
 
     # Borderless grayscale font
-    print(fmt_font("Hello World!", font=FontName.LLDISCO,, mode="half-gray", trim_border=True))
+    smart_print(fmt_font("Hello World!", font=FontName.LLDISCO,, mode="half-gray", trim_border=True))
     ```
 
 ## Image Modes
