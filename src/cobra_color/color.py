@@ -180,7 +180,7 @@ class ColorStr(str):
         styles: Optional[Iterable[StyleName]] = None
     ):
         plain_text = str(text)
-        if plain_text:
+        if plain_text and (fg is not None or bg is not None or styles is not None):
             ansi_text = ColorStr._colorize(
                 plain_text,
                 fg=fg,

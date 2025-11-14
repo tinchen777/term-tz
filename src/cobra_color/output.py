@@ -3,7 +3,6 @@
 # @TianZhen
 
 from __future__ import annotations
-import sys
 import builtins
 from typing import (Any, Optional, Callable, Union)
 
@@ -96,8 +95,6 @@ def smart_print(
             - `None`: Use the global console if set;
             - `Callable[..., Any]` or `ConsoleFunc`: Use the provided function.
     """
-    # format string
-    formatted_str = sep.join(map(str, values)) + end
     # determine output function and kwargs
     if console_func is not None:
         # Use provided console
@@ -113,13 +110,13 @@ def smart_print(
             used_func = _get_global_console()
 
     def _default_print():
-        builtins.print(formatted_str, file=file or sys.stdout, flush=flush)
+        builtins.print(*values, sep=sep, end=end, file=file, flush=flush)
 
     # output
     if used_func is None:
         _default_print()
     else:
         try:
-            used_func(formatted_str)
+            used_func(sep.join(map(str, values)) + end)
         except Exception:
             _default_print()
