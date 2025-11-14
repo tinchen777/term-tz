@@ -213,5 +213,6 @@ marimo/_lsp/
 __marimo__/
 
 draft.py
+test.py
 
 history/
