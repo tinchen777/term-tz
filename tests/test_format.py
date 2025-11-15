@@ -9,6 +9,6 @@ def test_fmt_dict():
 
 
 def test_fmt_list():
-    l = [1, 2, 3, {"a": 4, "b": [5, 6]}, [7, 8, 9], "text"]
-    result = fmt_list(l)
+    _l = [1, 2, 3, {"a": 4, "b": [5, 6]}, [7, 8, 9], "text"]
+    result = fmt_list(_l)
     assert isinstance(result, str)

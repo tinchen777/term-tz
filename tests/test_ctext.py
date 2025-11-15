@@ -1,5 +1,5 @@
 # tests/test_ctext.py
-from cobra_color import ctext
+from cobra_color import ctext, compile_template
 
 
 def test_ctext():
@@ -9,3 +9,11 @@ def test_ctext():
         print(a, end="")
         if (i + 1) % 32 == 0:
             print()
+
+
+# def test_compile_template():
+#     template = compile_template()
+#     compiled = compile_template(template)
+#     result = compiled(color="red", style="bold")
+#     assert isinstance(result, str)
+#     print(result)

@@ -7,7 +7,6 @@ A lightweight Python package for terminal display enhancements.
 
 _Example:_
 
-
 - Render a text in the terminal:
 
 ```python
