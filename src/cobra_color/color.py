@@ -3,6 +3,7 @@
 # @TianZhen
 
 from __future__ import annotations
+from functools import cached_property
 from typing import (Any, List, Tuple, Optional, Iterable, Union)
 
 from .types import (ColorName, StyleName)
@@ -108,10 +109,10 @@ def compile_template(
         Template
             A template object that can be used to generate colored strings with the preset styles.
     """
-    return Template(fg=fg, bg=bg, styles=styles)
+    return ColorTemplate(fg=fg, bg=bg, styles=styles)
 
 
-class Template():
+class ColorTemplate():
     r"""
     A template class for generating colored strings with preset styles.
 
@@ -168,8 +169,8 @@ class ColorStr(str):
 
     NOTE: Usage same as `str`, with `plain`, `color_only`, `style_only` properties.
     """
-    __slots__ = ("_SEGMENTS",)
     _SEGMENTS: List[Tuple[str, str, str]]  # list of (plain, color_codes, style_codes)
+    _is_colored: bool
 
     @classmethod
     def from_str(
@@ -183,6 +184,8 @@ class ColorStr(str):
         Create a ColorStr from a regular string with specified color and style.
         """
         plain = str(_str)
+        obj = super().__new__(cls, plain)
+        # segments
         if plain and (fg is not None or bg is not None or styles is not None):
             style_code, color_code = _get_ansi_code(
                 fg=fg,
@@ -192,10 +195,8 @@ class ColorStr(str):
         else:
             style_code = ""
             color_code = ""
-        segments = [(plain, color_code, style_code)]
-
-        obj = super().__new__(cls, _assemble_segments(segments))
-        obj._SEGMENTS = segments
+        obj._SEGMENTS = [(plain, color_code, style_code)]
+        obj._is_colored = bool(color_code or style_code)
 
         return obj
 
@@ -203,41 +204,152 @@ class ColorStr(str):
         cls,
         *segments: Tuple[str, str, str]
     ):
-        assert all(isinstance(seg, Tuple) and len(seg) == 3 for seg in segments), "Each Segment Must Be A Tuple Of (plain, color_code, style_code)."
-        obj = super().__new__(cls, _assemble_segments(segments))
+        # check segments
+        is_colored = False
+        for seg in segments:
+            try:
+                if seg[1] != "" or seg[2] != "":
+                    is_colored = True
+            except Exception:
+                raise ValueError("Each Segment Must Be A Tuple Of (plain, color_code, style_code).")
+
+        obj = super().__new__(cls, _assemble_segments(
+            segments,
+            use_color=False,
+            use_style=False
+        ))
         obj._SEGMENTS = list(segments)
+        obj._is_colored = is_colored
 
         return obj
 
+    def iscombined(self) -> bool:
+        r"""
+        Check if the ColorStr is combined from multiple segments.
+        """
+        return len(self._SEGMENTS) > 1
+
+    def iscolored(self) -> bool:
+        r"""
+        Check if the ColorStr has any color or style applied.
+        """
+        return self._is_colored
+
+    def apply_to(
+        self,
+        text: Any,
+        use_color: bool = True,
+        use_style: bool = True,
+        segment_idx: int = 0
+    ) -> ColorStr:
+        r"""
+        Apply the color and style of a specific segment to a new text.
+
+        Parameters
+        ----------
+            text : Any
+                The text content to be colored.
+
+            use_color : bool, default to `True`
+                Whether to apply color codes.
+
+            use_style : bool, default to `True`
+                Whether to apply style codes.
+
+            segment_idx : int, default to `0`
+                The index of the segment to use for color and style.
+
+        Returns
+        -------
+            ColorStr
+                The colored string with ANSI escape codes. Usage same as `str`, with `plain`, `color_only`, `style_only` properties.
+
+        Raises
+        ------
+            IndexError
+                If the segment index is out of range.
+        """
+        try:
+            _, color_code, style_code = self._SEGMENTS[segment_idx]
+        except IndexError:
+            raise IndexError(f"Segment Index {segment_idx} Out Of Range, Must Be 0 <= index < {len(self._SEGMENTS)}.")
+
+        return ColorStr((
+            text.plain if isinstance(text, ColorStr) else str(text),
+            color_code if use_color else "",
+            style_code if use_style else ""
+        ))
+
+    def __getattribute__(self, name):
+        attr = super().__getattribute__(name)
+
+        if callable(attr):
+            def wrapper(*args, **kwargs):
+                result = attr(*args, **kwargs)
+                if isinstance(result, str) and not isinstance(result, ColorStr):
+                    return self.apply_to(result)
+                return result
+            return wrapper
+        return attr
+
     def __add__(self, other_str: str):
-        other_c_str = other_str if isinstance(other_str, ColorStr) else ColorStr.from_str(other_str)
-        return ColorStr(*(self._SEGMENTS + other_c_str._SEGMENTS))
+        if isinstance(other_str, ColorStr):
+            other_segments = other_str._SEGMENTS
+        else:
+            other_segments = [(str(other_str), "", "")]
+        return ColorStr(*(self._SEGMENTS + other_segments))
 
-    def __iadd__(self, other_str: str):
-        other_c_str = other_str if isinstance(other_str, ColorStr) else ColorStr.from_str(other_str)
-        self._SEGMENTS.extend(other_c_str._SEGMENTS)
-        return ColorStr(*(self._SEGMENTS))
+    def __mul__(self, n: Any):
+        assert isinstance(n, int), "Can Only Multiply ColorStr By An Integer."
+        if n <= 0:
+            return ColorStr()
+        return ColorStr(*self._SEGMENTS * n)
 
-    @property
+    def __str__(self):
+        return self.rich
+
+    def __repr__(self):
+        return repr(self.rich)
+
+    @cached_property
     def plain(self) -> str:
         r"""
         The plain text without ANSI formatting.
         """
-        return _assemble_segments(self._SEGMENTS, use_color=False, use_style=False)
+        return super().__str__()
 
-    @property
+    @cached_property
     def color_only(self) -> str:
         r"""
         The colored text without styles.
         """
-        return _assemble_segments(self._SEGMENTS, use_color=True, use_style=False)
+        return _assemble_segments(
+            self._SEGMENTS,
+            use_color=True,
+            use_style=False
+        )
 
-    @property
+    @cached_property
     def style_only(self) -> str:
         r"""
         The styled text without colors.
         """
-        return _assemble_segments(self._SEGMENTS, use_color=False, use_style=True)
+        return _assemble_segments(
+            self._SEGMENTS,
+            use_color=False,
+            use_style=True
+        )
+
+    @cached_property
+    def rich(self) -> str:
+        r"""
+        The rich text with colors and styles.
+        """
+        return _assemble_segments(
+            self._SEGMENTS,
+            use_color=True,
+            use_style=True
+        )
 
 
 def _get_ansi_code(
