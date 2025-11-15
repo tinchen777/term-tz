@@ -167,7 +167,9 @@ class ColorStr(str):
     r"""
     A string class that supports ANSI color and style formatting while preserving plain text.
 
-    NOTE: Usage same as `str`, with `plain`, `color_only`, `style_only` properties.
+    NOTE 1: Usage same as `str`, with `plain`, `color_only`, `style_only` properties.
+
+    NOTE 2: The `str` output functions from str class (like `upper()`, `lower()`, etc.) are overridden to preserve color and style formatting for non-combined ColorStr.
     """
     _SEGMENTS: List[Tuple[str, str, str]]  # list of (plain, color_codes, style_codes)
     _is_colored: bool
@@ -286,7 +288,7 @@ class ColorStr(str):
         if callable(attr):
             def wrapper(*args, **kwargs):
                 result = attr(*args, **kwargs)
-                if isinstance(result, str) and not isinstance(result, ColorStr):
+                if isinstance(result, str) and not isinstance(result, ColorStr) and not self.iscombined():
                     return self.apply_to(result)
                 return result
             return wrapper
