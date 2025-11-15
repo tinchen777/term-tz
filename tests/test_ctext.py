@@ -11,9 +11,7 @@ def test_ctext():
             print()
 
 
-# def test_compile_template():
-#     template = compile_template()
-#     compiled = compile_template(template)
-#     result = compiled(color="red", style="bold")
-#     assert isinstance(result, str)
-#     print(result)
+def test_compile_template():
+    template = compile_template(bg="b", styles=["bold", "udl"])
+    c_str = template("Hello World!")
+    assert isinstance(c_str, str)

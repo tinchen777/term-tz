@@ -25,10 +25,12 @@ _STYLE_CODE = {
     "dim": "2",
     "italic": "3",
     "udl": "4",
+    "underline": "4",
     "blink": "5",
     "selected": "7",
     "disappear": "8",
-    "del": "9"
+    "del": "9",
+    "delete": "9"
 }
 
 
@@ -69,7 +71,7 @@ def ctext(
         styles : Optional[Iterable[StyleName]]], default to `None`
             The styles combination of the string.
 
-            NOTE: _StyleName_: `bold`, `dim`, `italic`, `udl`, `blink`, `selected`, `disappear`, `del`.
+            NOTE: _StyleName_: `bold`, `dim`, `italic`, `udl`, `underline`, `blink`, `selected`, `disappear`, `del`, `delete`.
 
     Returns
     -------
@@ -132,7 +134,6 @@ class Template():
         fg: Any = None,
         bg: Any = None,
         styles: Any = None,
-        **kwargs: Any
     ):
         self.__fg = fg
         self.__bg = bg
@@ -152,12 +153,7 @@ class Template():
             ColorStr
                 The colored string with ANSI escape codes. Usage same as `str`, with `plain`, `color_only`, `style_only` properties.
         """
-        return ctext(
-            text,
-            fg=self.__fg,
-            bg=self.__bg,
-            styles=self.__styles
-        )
+        return ColorStr(text, fg=self.__fg, bg=self.__bg, styles=self.__styles)
 
     def __call__(self, text: Any) -> ColorStr:
         r"""
@@ -172,6 +168,7 @@ class ColorStr(str):
 
     NOTE: Usage same as `str`, with `plain`, `color_only`, `style_only` properties.
     """
+    __slots__ = ("_PLAIN", "_STYLE_CODES", "_COLOR_CODES")
     _PLAIN: str
     _STYLE_CODES: str
     _COLOR_CODES: str
@@ -185,7 +182,7 @@ class ColorStr(str):
     ):
         plain_text = str(text)
         if plain_text and (fg is not None or bg is not None or styles is not None):
-            style_codes, color_codes = ColorStr._get_ansi_codes(
+            style_codes, color_codes = _get_ansi_codes(
                 fg=fg,
                 bg=bg,
                 styles=styles if styles is not None else []
@@ -198,14 +195,46 @@ class ColorStr(str):
             ansi_text = plain_text
 
         obj = super().__new__(cls, ansi_text)
-
-        setattr(obj, "_PLAIN", plain_text)
-        setattr(obj, "_STYLE_CODES", style_codes)
-        setattr(obj, "_COLOR_CODES", color_codes)
+        obj._PLAIN = plain_text
+        obj._STYLE_CODES = style_codes
+        obj._COLOR_CODES = color_codes
 
         return obj
 
-    @staticmethod
+    @property
+    def plain(self) -> str:
+        r"""
+        The plain text without ANSI formatting.
+        """
+        return self._PLAIN
+
+    @property
+    def color_only(self) -> str:
+        r"""
+        The colored text without styles.
+        """
+        if not self._COLOR_CODES:
+            return self._PLAIN
+        return f"\033[{self._COLOR_CODES}m{self._PLAIN}\033[0m"
+
+    @property
+    def style_only(self) -> str:
+        r"""
+        The styled text without colors.
+        """
+        if not self._STYLE_CODES:
+            return self._PLAIN
+        return f"\033[{self._STYLE_CODES}m{self._PLAIN}\033[0m"
+
+
+def _get_ansi_codes(
+    fg: Optional[Union[ColorName, int, Iterable[int]]],
+    bg: Optional[Union[ColorName, int, Iterable[int]]],
+    styles: Iterable[StyleName]
+) -> Tuple[str, str]:
+    r"""
+    Generate ANSI codes for styles and colors.
+    """
     def _parse_color(
         c: Union[ColorName, int, Iterable[int]],
         is_fg: bool
@@ -232,48 +261,14 @@ class ColorStr(str):
 
         return parse
 
-    @staticmethod
-    def _get_ansi_codes(
-        fg: Optional[Union[ColorName, int, Iterable[int]]],
-        bg: Optional[Union[ColorName, int, Iterable[int]]],
-        styles: Iterable[StyleName]
-    ) -> Tuple[str, str]:
-        r"""
-        Generate ANSI codes for styles and colors.
-        """
-        # style_codes
-        if isinstance(styles, Iterable):
-            style_codes = ";".join(_STYLE_CODE[s] for s in styles if s in _STYLE_CODE)
-        else:
-            style_codes = ""
-        # color_codes
-        foreground = "" if fg is None else ColorStr._parse_color(fg, is_fg=True)
-        background = "" if bg is None else ColorStr._parse_color(bg, is_fg=False)
-        color_codes = ";".join((foreground, background)).strip(";")
+    # style_codes
+    if isinstance(styles, Iterable):
+        style_codes = ";".join(_STYLE_CODE[s] for s in styles if s in _STYLE_CODE)
+    else:
+        style_codes = ""
+    # color_codes
+    foreground = "" if fg is None else _parse_color(fg, is_fg=True)
+    background = "" if bg is None else _parse_color(bg, is_fg=False)
+    color_codes = ";".join((foreground, background)).strip(";")
 
-        return style_codes, color_codes
-
-    @property
-    def plain(self) -> str:
-        r"""
-        The plain text without ANSI formatting.
-        """
-        return self._PLAIN
-
-    @property
-    def color_only(self) -> str:
-        r"""
-        The colored text without styles.
-        """
-        if not self._COLOR_CODES:
-            return self._PLAIN
-        return f"\033[{self._COLOR_CODES}m{self._PLAIN}\033[0m"
-
-    @property
-    def style_only(self) -> str:
-        r"""
-        The styled text without colors.
-        """
-        if not self._STYLE_CODES:
-            return self._PLAIN
-        return f"\033[{self._STYLE_CODES}m{self._PLAIN}\033[0m"
+    return style_codes, color_codes
