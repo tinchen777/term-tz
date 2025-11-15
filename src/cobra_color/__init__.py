@@ -49,7 +49,7 @@ from .format import (fmt_dict, fmt_list)
 
 
 __author__ = "Zhen Tian"
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 
 __all__ = [
     "draw",  # module

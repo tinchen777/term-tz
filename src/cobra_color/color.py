@@ -3,7 +3,7 @@
 # @TianZhen
 
 from __future__ import annotations
-from typing import (Any, Tuple, Optional, Iterable, Union)
+from typing import (Any, List, Tuple, Optional, Iterable, Union)
 
 from .types import (ColorName, StyleName)
 
@@ -76,9 +76,9 @@ def ctext(
     Returns
     -------
         ColorStr
-            The colored string with ANSI escape codes. Usage same as `str`, with `plain`, `color_only`, `style_only` properties.
+            The colored string with ANSI escape codes. Usage same as `str`, with `plain`, `color_only`, `style_only` properties. You can combine multiple colored strings using `+` operator or `+=` operator.
     """
-    return ColorStr(text, fg=fg, bg=bg, styles=styles)
+    return ColorStr.from_str(text, fg=fg, bg=bg, styles=styles)
 
 
 def compile_template(
@@ -153,7 +153,7 @@ class Template():
             ColorStr
                 The colored string with ANSI escape codes. Usage same as `str`, with `plain`, `color_only`, `style_only` properties.
         """
-        return ColorStr(text, fg=self.__fg, bg=self.__bg, styles=self.__styles)
+        return ColorStr.from_str(text, fg=self.__fg, bg=self.__bg, styles=self.__styles)
 
     def __call__(self, text: Any) -> ColorStr:
         r"""
@@ -168,79 +168,92 @@ class ColorStr(str):
 
     NOTE: Usage same as `str`, with `plain`, `color_only`, `style_only` properties.
     """
-    __slots__ = ("_PLAIN", "_STYLE_CODES", "_COLOR_CODES")
-    _PLAIN: str
-    _STYLE_CODES: str
-    _COLOR_CODES: str
+    __slots__ = ("_SEGMENTS",)
+    _SEGMENTS: List[Tuple[str, str, str]]  # list of (plain, color_codes, style_codes)
 
-    def __new__(
+    @classmethod
+    def from_str(
         cls,
-        text: Any,
+        _str: Any,
         fg: Optional[Union[ColorName, int, Iterable[int]]] = None,
         bg: Optional[Union[ColorName, int, Iterable[int]]] = None,
         styles: Optional[Iterable[StyleName]] = None
     ):
-        plain_text = str(text)
-        if plain_text and (fg is not None or bg is not None or styles is not None):
-            style_codes, color_codes = _get_ansi_codes(
+        r"""
+        Create a ColorStr from a regular string with specified color and style.
+        """
+        plain = str(_str)
+        if plain and (fg is not None or bg is not None or styles is not None):
+            style_code, color_code = _get_ansi_code(
                 fg=fg,
                 bg=bg,
                 styles=styles if styles is not None else []
             )
-            _codes = ";".join((style_codes, color_codes)).strip(";")
-            ansi_text = f"\033[{_codes}m{plain_text}\033[0m"
         else:
-            style_codes = ""
-            color_codes = ""
-            ansi_text = plain_text
+            style_code = ""
+            color_code = ""
+        segments = [(plain, color_code, style_code)]
 
-        obj = super().__new__(cls, ansi_text)
-        obj._PLAIN = plain_text
-        obj._STYLE_CODES = style_codes
-        obj._COLOR_CODES = color_codes
+        obj = super().__new__(cls, _assemble_segments(segments))
+        obj._SEGMENTS = segments
 
         return obj
+
+    def __new__(
+        cls,
+        *segments: Tuple[str, str, str]
+    ):
+        assert all(isinstance(seg, Tuple) and len(seg) == 3 for seg in segments), "Each Segment Must Be A Tuple Of (plain, color_code, style_code)."
+        obj = super().__new__(cls, _assemble_segments(segments))
+        obj._SEGMENTS = list(segments)
+
+        return obj
+
+    def __add__(self, other_str: str):
+        other_c_str = other_str if isinstance(other_str, ColorStr) else ColorStr.from_str(other_str)
+        return ColorStr(*(self._SEGMENTS + other_c_str._SEGMENTS))
+
+    def __iadd__(self, other_str: str):
+        other_c_str = other_str if isinstance(other_str, ColorStr) else ColorStr.from_str(other_str)
+        self._SEGMENTS.extend(other_c_str._SEGMENTS)
+        return ColorStr(*(self._SEGMENTS))
 
     @property
     def plain(self) -> str:
         r"""
         The plain text without ANSI formatting.
         """
-        return self._PLAIN
+        return _assemble_segments(self._SEGMENTS, use_color=False, use_style=False)
 
     @property
     def color_only(self) -> str:
         r"""
         The colored text without styles.
         """
-        if not self._COLOR_CODES:
-            return self._PLAIN
-        return f"\033[{self._COLOR_CODES}m{self._PLAIN}\033[0m"
+        return _assemble_segments(self._SEGMENTS, use_color=True, use_style=False)
 
     @property
     def style_only(self) -> str:
         r"""
         The styled text without colors.
         """
-        if not self._STYLE_CODES:
-            return self._PLAIN
-        return f"\033[{self._STYLE_CODES}m{self._PLAIN}\033[0m"
+        return _assemble_segments(self._SEGMENTS, use_color=False, use_style=True)
 
 
-def _get_ansi_codes(
+def _get_ansi_code(
     fg: Optional[Union[ColorName, int, Iterable[int]]],
     bg: Optional[Union[ColorName, int, Iterable[int]]],
     styles: Iterable[StyleName]
 ) -> Tuple[str, str]:
     r"""
-    Generate ANSI codes for styles and colors.
+    Generate ANSI code for style and color.
     """
     def _parse_color(
         c: Union[ColorName, int, Iterable[int]],
         is_fg: bool
     ) -> str:
         r"""
-        Parse the color input into ANSI color codes.
+        Parse the color input into ANSI color code.
         """
         parse = ""
         if isinstance(c, str):
@@ -261,14 +274,42 @@ def _get_ansi_codes(
 
         return parse
 
-    # style_codes
+    # style_code
     if isinstance(styles, Iterable):
-        style_codes = ";".join(_STYLE_CODE[s] for s in styles if s in _STYLE_CODE)
+        style_code = ";".join(_STYLE_CODE[s] for s in styles if s in _STYLE_CODE)
     else:
-        style_codes = ""
-    # color_codes
+        style_code = ""
+    # color_code
     foreground = "" if fg is None else _parse_color(fg, is_fg=True)
     background = "" if bg is None else _parse_color(bg, is_fg=False)
-    color_codes = ";".join((foreground, background)).strip(";")
+    color_code = ";".join((foreground, background)).strip(";")
 
-    return style_codes, color_codes
+    return style_code, color_code
+
+
+def _assemble_segments(
+    segments: Iterable[Tuple[str, str, str]],
+    use_color: bool = True,
+    use_style: bool = True
+) -> str:
+    r"""
+    Assemble segments into a single ANSI formatted string.
+    """
+    result = ""
+    for plain, color_code, style_code in segments:
+        if not plain:
+            continue
+
+        if use_color and use_style:
+            codes = f"{style_code};{color_code}"
+        elif use_color or use_style:
+            codes = color_code if use_color else style_code
+        else:
+            codes = ""
+        codes = codes.strip(";")
+        if codes:
+            result += f"\033[{codes}m{plain}\033[0m"
+        else:
+            result += plain
+
+    return result
